@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Dict, Iterator, List, Optional, Set, Tuple
 
-import params
+from settings_utils import get_current_settings
 
 
 # ============================================================================
@@ -17,13 +17,20 @@ INFECTIOUS = 2
 RECOVERED = 3
 
 STATE_NAMES = {SUSCEPTIBLE: "S", EXPOSED: "E", INFECTIOUS: "I", RECOVERED: "R"}
-
 STATE_FROM_NAME = {"S": SUSCEPTIBLE, "E": EXPOSED, "I": INFECTIOUS, "R": RECOVERED}
-
 
 Coord = Tuple[int, int]
 StateMap = Dict[Coord, int]
 TimerMap = Dict[Coord, int]
+
+
+# ============================================================================
+# Settings helpers
+# ============================================================================
+
+def get_grid_dimensions() -> tuple[int, int]:
+    settings = get_current_settings()
+    return settings["GRID_WIDTH"], settings["GRID_HEIGHT"]
 
 
 # ============================================================================
@@ -32,7 +39,8 @@ TimerMap = Dict[Coord, int]
 
 def in_bounds(x: int, y: int) -> bool:
     """Return True if (x, y) lies inside the grid."""
-    return 0 <= x < params.GRID_WIDTH and 0 <= y < params.GRID_HEIGHT
+    grid_width, grid_height = get_grid_dimensions()
+    return 0 <= x < grid_width and 0 <= y < grid_height
 
 
 def moore_neighbors(x: int, y: int) -> Iterator[Coord]:
@@ -142,8 +150,10 @@ def count_states(state_map: StateMap) -> Dict[int, int]:
     Return counts of S/E/I/R across the whole grid.
     Since S is implicit, compute it from total size.
     """
+    grid_width, grid_height = get_grid_dimensions()
+
     counts = {
-        SUSCEPTIBLE: params.GRID_WIDTH * params.GRID_HEIGHT,
+        SUSCEPTIBLE: grid_width * grid_height,
         EXPOSED: 0,
         INFECTIOUS: 0,
         RECOVERED: 0,
@@ -164,20 +174,12 @@ def save_map(filepath: str | Path, state_map: StateMap, timer_map: Optional[Time
     """
     Save a sparse map to JSON.
 
-    Format:
-    {
-        "width": ...,
-        "height": ...,
-        "cells": [
-            {"x": 10, "y": 4, "state": 2},
-            {"x": 11, "y": 4, "state": 1, "timer": 2}
-        ]
-    }
-
     Only non-S cells are stored.
     """
     if timer_map is None:
         timer_map = {}
+
+    grid_width, grid_height = get_grid_dimensions()
 
     cells: List[dict] = []
 
@@ -189,7 +191,7 @@ def save_map(filepath: str | Path, state_map: StateMap, timer_map: Optional[Time
         }
         cells.append(record)
 
-    payload = {"width": params.GRID_WIDTH, "height": params.GRID_HEIGHT, "cells": cells}
+    payload = {"width": grid_width, "height": grid_height, "cells": cells}
 
     filepath = Path(filepath)
     filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -213,9 +215,13 @@ def load_map(filepath: str | Path) -> Tuple[StateMap, TimerMap]:
     width = payload.get("width")
     height = payload.get("height")
 
-    if width != params.GRID_WIDTH or height != params.GRID_HEIGHT:
-        raise ValueError(f"Map dimensions ({width}, {height}) do not match params "
-            f"({params.GRID_WIDTH}, {params.GRID_HEIGHT}).")
+    grid_width, grid_height = get_grid_dimensions()
+
+    if width != grid_width or height != grid_height:
+        raise ValueError(
+            f"Map dimensions ({width}, {height}) do not match current settings "
+            f"({grid_width}, {grid_height})."
+        )
 
     state_map: StateMap = {}
     timer_map: TimerMap = {}
@@ -253,7 +259,8 @@ def to_dense_grid(state_map: StateMap) -> List[List[int]]:
     Convert sparse state map to a dense 2D Python list.
     Useful for debugging or testing.
     """
-    grid = [[SUSCEPTIBLE for _ in range(params.GRID_WIDTH)] for _ in range(params.GRID_HEIGHT)]
+    grid_width, grid_height = get_grid_dimensions()
+    grid = [[SUSCEPTIBLE for _ in range(grid_width)] for _ in range(grid_height)]
 
     for (x, y), state in state_map.items():
         grid[y][x] = state
