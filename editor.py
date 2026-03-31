@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Optional
+from paths import MAPS_DIR
 
 import pygame
 
@@ -187,14 +188,14 @@ def run_editor(initial_map_path: str | Path | None = None) -> None:
                     name = prompt_filename(screen, clock, font, "Save map as:")
                     if name is not None:
                         filename = f"{name}.json" if not name.endswith(".json") else name
-                        save_path = Path("maps") / filename
+                        save_path = MAPS_DIR / filename
                         save_map(save_path, state_map, timer_map)
                         current_filename = filename
                 elif event.key == pygame.K_l:
                     name = prompt_filename(screen, clock, font, "Load map:")
                     if name is not None:
                         filename = f"{name}.json" if not name.endswith(".json") else name
-                        load_path = Path("maps") / filename
+                        load_path = MAPS_DIR / filename
                         if load_path.exists():
                             state_map, timer_map = load_map(load_path)
                             current_filename = filename

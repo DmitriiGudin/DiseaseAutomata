@@ -6,9 +6,8 @@ from typing import Optional
 import pygame
 
 from settings_editor import run_settings_editor
+from paths import MAPS_DIR
 
-
-MAPS_DIR = Path("maps")
 
 WINDOW_WIDTH = 700
 WINDOW_HEIGHT = 520

@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import copy
 import json
-from pathlib import Path
 from typing import Any, Dict
+from paths import SETTINGS_PATH
 
-
-SETTINGS_PATH = Path("settings.json")
 
 REQUIRED_KEYS = {
     "GRID_WIDTH": int,
